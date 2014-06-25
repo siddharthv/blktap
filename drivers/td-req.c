@@ -319,6 +319,7 @@ tapdisk_xenblkif_make_vbd_request(struct td_xenblkif * const blkif,
     struct td_iovec *iov;
     void *page, *next, *last;
     int err = 0;
+    unsigned nr_sect = 0;
 
     ASSERT(tapreq);
 
@@ -328,10 +329,12 @@ tapdisk_xenblkif_make_vbd_request(struct td_xenblkif * const blkif,
 
     switch (tapreq->msg.operation) {
     case BLKIF_OP_READ:
+        blkif->stats.xenvbd.st_rd_req++;
         tapreq->prot = PROT_WRITE;
         vreq->op = TD_OP_READ;
         break;
     case BLKIF_OP_WRITE:
+        blkif->stats.xenvbd.st_wr_req++;
         tapreq->prot = PROT_READ;
         vreq->op = TD_OP_WRITE;
         break;
@@ -396,6 +399,7 @@ tapdisk_xenblkif_make_vbd_request(struct td_xenblkif * const blkif,
 
         last = iov->base + (iov->secs << SECTOR_SHIFT);
         page += XC_PAGE_SIZE;
+        nr_sect += size;
     }
 
     vreq->iov = tapreq->iov;
@@ -408,7 +412,9 @@ tapdisk_xenblkif_make_vbd_request(struct td_xenblkif * const blkif,
             ERR(blkif, "failed to copy from guest: %s\n", strerror(-err));
             goto out;
         }
-    }
+        blkif->stats.xenvbd.st_wr_sect += nr_sect;
+    } else
+        blkif->stats.xenvbd.st_rd_sect += nr_sect;
 
     /*
      * TODO Isn't this kind of expensive to do for each requests? Why does

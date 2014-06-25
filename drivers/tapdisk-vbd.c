@@ -1102,7 +1102,7 @@ tapdisk_vbd_check_state(td_vbd_t *vbd)
     /*
      * FIXME don't ignore return value
      */
-    tapdisk_xenblkif_show_io_ring(vbd->sring);
+    tapdisk_xenblkif_stats_update(vbd->sring);
 
 	tapdisk_vbd_check_queue_state(vbd);
 

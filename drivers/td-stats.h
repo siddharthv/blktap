@@ -35,6 +35,50 @@ struct td_xenblkif_stats {
         unsigned long long vbd;
         unsigned long long img;
     } errors;
+
+    /**
+     * blkback-style stats
+     */
+    struct {
+        /**
+         * BLKIF_OP_DISCARD, not currently supported in blktap3, should always
+         * be zero
+         */
+        unsigned long long st_ds_req;
+
+        /**
+         * BLKIF_OP_FLUSH_DISKCACHE, not currently supported in blktap3,
+         * should always be zero
+         */
+        unsigned long long st_f_req;
+
+        /**
+         * Increased each time we fail to allocate memory for a internal
+         * request descriptor in response to a ring request.
+         */
+        unsigned long long st_oo_req;
+
+        /**
+         * BLKIF_OP_READ
+         */
+        unsigned long long st_rd_req;
+
+        /**
+         * Read sectors, after we've forwarded the request to actual storage.
+         */
+        unsigned long long st_rd_sect;
+
+        /**
+         * BLKIF_OP_WRITE
+         */
+        unsigned long long st_wr_req;
+
+
+        /**
+         * Write sectors, after we've forwarded the request to actual storage.
+         */
+        unsigned long long st_wr_sect;
+    } xenvbd;
 };
 
 #include "td-blkif.h"

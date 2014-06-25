@@ -369,6 +369,8 @@ shm_destroy(struct shm *shm) {
             err = errno;
             if (err != ENOENT)
                 goto out;
+            else
+                err = 0;
         }
     }
 
