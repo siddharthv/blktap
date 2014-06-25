@@ -119,8 +119,16 @@ tapdisk_xenblkif_show_io_ring_create(struct td_xenblkif *blkif)
         err = 0;
     }
 
-    blkif->shm.size = PAGE_SIZE;
-    blkif->last = time(NULL);
+    // Create stats tree here
+
+    err = mkdir("/dev/shm/statistics/", S_IRUSR | S_IWUSR);
+    if (err == -1) {
+        err = errno;
+        blkif->shm.path = NULL;
+        goto out;
+    }
+    err = 0;
+
 
     err = shm_create(&blkif->shm);
     if (err)
@@ -394,5 +402,51 @@ tapdisk_xenblkif_show_io_ring(struct td_xenblkif *blkif)
         err = ENOBUFS;
     else
         err = 0;
+    return -err;
+}
+
+
+static int
+tapdisk_xenblkif_create_io_stats(struct td_xenblkif *blkif)
+{
+    int err;
+    char *dir = NULL, *_dir = NULL;
+
+
+    // Create stats tree here
+    err = asprintf(&blkif-iostat.path, "/dev/shm/vbd3-%d-%d/statistics",
+            blkif->domid, blkif->devid);
+    if (err == -1) {
+        err = errno;
+        blkif->iostat.path = NULL;
+        goto out;
+    }
+    err = 0;
+
+    _dir = strdup(blkif->iostat.path);
+    if(!_dir) {
+        err = errno;
+        goto out;
+    }
+    dir = dirname(_dir);
+    err = mkdir(dir, S_IRUSR | S_IWUSR);
+    if (err) {
+        err = errno;
+        if (err != EEXIST) {
+            EPRINTF("Failed to create %s: %s\n", dir, strerror(err));
+            goto out;
+        }
+        err = 0;
+    
+    err = shm_create(&blkif->iostat);
+    if (err)
+        EPRINTF("failed to create shm io stats tree: %s\n", strerror(err));
+
+out:
+    free(_dir);
+    if (err) {
+            EPRINTF("failed to clean up failed ring stats file: "
+                    "%s (error ignored)\n", strerror(-err));
+    }
     return -err;
 }

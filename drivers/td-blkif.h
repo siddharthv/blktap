@@ -123,6 +123,7 @@ struct td_xenblkif {
     struct td_xenblkif_stats stats;
 
     struct shm shm;
+    struct td_xenblkif_io_stats iostat;
     time_t last;
 };
 
@@ -188,4 +189,6 @@ tapdisk_xenblkif_event_id(const struct td_xenblkif *blkif);
 int
 tapdisk_xenblkif_show_io_ring(struct td_xenblkif *blkif);
 
+int
+tapdisk_xenblkif_create_io_stats(struct td_xenblkif *blkif);
 #endif /* __TD_BLKIF_H__ */

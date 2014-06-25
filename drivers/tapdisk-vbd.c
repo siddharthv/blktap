@@ -1103,6 +1103,8 @@ tapdisk_vbd_check_state(td_vbd_t *vbd)
      * FIXME don't ignore return value
      */
     tapdisk_xenblkif_show_io_ring(vbd->sring);
+    DPRINTF("SID -> Create io stat tree\n");
+    tapdisk_xenblkif_create_io_stats(vbd->sring);
 
 	tapdisk_vbd_check_queue_state(vbd);
 

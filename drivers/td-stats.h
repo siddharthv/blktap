@@ -37,6 +37,12 @@ struct td_xenblkif_stats {
     } errors;
 };
 
+struct td_xenblkif_io_stats {
+	char * path;
+	unsigned long long rd_req;
+	unsigned long long wr_req;
+};
+
 #include "td-blkif.h"
 struct td_xenblkif;
 
