@@ -382,6 +382,7 @@ tapdisk_xenblkif_stats_update(struct td_xenblkif *blkif)
     time_t t;
     int err = 0;
 	struct blkif_common_back_ring *ring = NULL;
+    long long rd_usecs = 0, wr_usecs = 0;
 
     if (!blkif)
         return 0;
@@ -394,10 +395,10 @@ tapdisk_xenblkif_stats_update(struct td_xenblkif *blkif)
     ASSERT(blkif->xenvbd_stats.stats.mem);
 
     /*
-     * Update the ring stats once every thirty seconds.
+     * Update the ring stats once every five seconds.
      */
     t = time(NULL);
-	if (t - blkif->xenvbd_stats.last < 30)
+	if (t - blkif->xenvbd_stats.last < 5)
 		return 0;
 	blkif->xenvbd_stats.last = t;
 
@@ -413,25 +414,60 @@ tapdisk_xenblkif_stats_update(struct td_xenblkif *blkif)
         err = errno;
     else if (unlikely(err >= blkif->xenvbd_stats.io_ring.size))
         err = ENOBUFS;
-    else
-        err = 0;
+    else {
+        err = ftruncate(blkif->xenvbd_stats.io_ring.fd, err);
+        if (unlikely(err)) {
+            err = errno;
+            EPRINTF("failed to truncate %s: %s\n",
+                    blkif->xenvbd_stats.io_ring.path, strerror(err));
+        }
+    }
+
+    if (blkif->stats.xenvbd.st_rd_cnt)
+        rd_usecs = blkif->stats.xenvbd.st_rd_sum_usecs /
+            blkif->stats.xenvbd.st_rd_cnt;
+
+    if (blkif->stats.xenvbd.st_wr_cnt)
+        wr_usecs = blkif->stats.xenvbd.st_wr_sum_usecs /
+            blkif->stats.xenvbd.st_wr_cnt;
 
     err = snprintf(blkif->xenvbd_stats.stats.mem,
             blkif->xenvbd_stats.stats.size,
-            "%llu %llu %llu %llu %llu %llu %llu\n",
+            "%llu %llu %llu %llu %llu %llu %llu\n"
+            "read requests %lld, avg usecs: %llu, max usecs: %llu\n"
+            "write requests %lld, avg usecs: %llu, max usecs: %llu\n",
             blkif->stats.xenvbd.st_ds_req,
             blkif->stats.xenvbd.st_f_req,
             blkif->stats.xenvbd.st_oo_req,
             blkif->stats.xenvbd.st_rd_req,
             blkif->stats.xenvbd.st_rd_sect,
             blkif->stats.xenvbd.st_wr_req,
-            blkif->stats.xenvbd.st_wr_sect);
+            blkif->stats.xenvbd.st_wr_sect,
+            blkif->stats.xenvbd.st_rd_cnt,
+            rd_usecs,
+            blkif->stats.xenvbd.st_rd_max_usecs,
+            blkif->stats.xenvbd.st_wr_cnt,
+            wr_usecs,
+            blkif->stats.xenvbd.st_wr_max_usecs);
     if (unlikely(err < 0))
         err = errno;
     else if (unlikely(err >= blkif->xenvbd_stats.stats.size))
         err = ENOBUFS;
-    else
-        err = 0;
+    else {
+        err = ftruncate(blkif->xenvbd_stats.stats.fd, err);
+        if (unlikely(err)) {
+            err = errno;
+            EPRINTF("failed to truncate %s: %s\n",
+                    blkif->xenvbd_stats.stats.path, strerror(err));
+        }
+    }
+
+    blkif->stats.xenvbd.st_rd_cnt = 0;
+    blkif->stats.xenvbd.st_rd_sum_usecs = 0;
+    blkif->stats.xenvbd.st_rd_max_usecs = 0;
+    blkif->stats.xenvbd.st_wr_cnt = 0;
+    blkif->stats.xenvbd.st_wr_sum_usecs = 0;
+    blkif->stats.xenvbd.st_wr_max_usecs = 0;
 
     return -err;
 }

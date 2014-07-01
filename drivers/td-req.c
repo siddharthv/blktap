@@ -231,6 +231,7 @@ out:
     return err;
 }
 
+
 /**
  * Completes a request.
  *
@@ -244,18 +245,28 @@ tapdisk_xenblkif_complete_request(struct td_xenblkif * const blkif,
         struct td_xenblkif_req* tapreq, int err, const int final)
 {
 	int _err;
+    long long *max, *sum, *cnt = NULL;
 
     ASSERT(blkif);
     ASSERT(tapreq);
 
-	if (BLKIF_OP_READ == tapreq->msg.operation && !err) {
-		_err = guest_copy2(blkif, tapreq);
-		if (_err) {
-			err = _err;
-			ERR(blkif, "failed to copy from/to guest: %s\n",
-					strerror(-err));
-		}
-	}
+	if (BLKIF_OP_READ == tapreq->msg.operation) {
+        cnt = &blkif->stats.xenvbd.st_rd_cnt;
+        sum = &blkif->stats.xenvbd.st_rd_sum_usecs;
+        max = &blkif->stats.xenvbd.st_rd_max_usecs;
+        if (!err) {
+            _err = guest_copy2(blkif, tapreq);
+            if (_err) {
+                err = _err;
+                ERR(blkif, "failed to copy from/to guest: %s\n",
+                        strerror(-err));
+            }
+        }
+	} else {
+        cnt = &blkif->stats.xenvbd.st_wr_cnt;
+        sum = &blkif->stats.xenvbd.st_wr_sum_usecs;
+        max = &blkif->stats.xenvbd.st_wr_max_usecs;
+    }
 
     if (tapreq->msg.operation == BLKIF_OP_WRITE_BARRIER)
         _err = BLKIF_RSP_EOPNOTSUPP;
@@ -263,6 +274,19 @@ tapdisk_xenblkif_complete_request(struct td_xenblkif * const blkif,
         _err = BLKIF_RSP_ERROR;
     else
         _err = BLKIF_RSP_OKAY;
+
+    if (likely(cnt)) {
+        struct timeval now;
+        long long interval;
+        gettimeofday(&now, NULL);
+        interval = timeval_to_us(&now) - timeval_to_us(&tapreq->vreq.ts);
+
+        if (interval > *max)
+		    *max = interval;
+
+        *sum += interval;
+        *cnt += 1;
+    }
 
     xenio_blkif_put_response(blkif, tapreq, _err, final);
 

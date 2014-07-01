@@ -59,9 +59,14 @@ struct td_xenblkif_stats {
         unsigned long long st_oo_req;
 
         /**
-         * BLKIF_OP_READ
+         * Received BLKIF_OP_READ requests.
          */
         unsigned long long st_rd_req;
+
+        /**
+         * Completed BLKIF_OP_READ requests.
+         */
+        long long st_rd_cnt;
 
         /**
          * Read sectors, after we've forwarded the request to actual storage.
@@ -69,15 +74,40 @@ struct td_xenblkif_stats {
         unsigned long long st_rd_sect;
 
         /**
-         * BLKIF_OP_WRITE
+         * Sum of the request response time of all BLKIF_OP_READ, in us.
+         */
+        long long st_rd_sum_usecs;
+
+        /**
+         * Absolute maximum BLKIF_OP_READ response time, in us.
+         */
+	    long long st_rd_max_usecs;
+
+        /**
+         * Received BLKIF_OP_WRITE requests.
          */
         unsigned long long st_wr_req;
 
+        /**
+         * Completed BLKIF_OP_WRITE requests.
+         */
+        long long st_wr_cnt;
 
         /**
          * Write sectors, after we've forwarded the request to actual storage.
          */
         unsigned long long st_wr_sect;
+
+        /**
+         * Sum of the request response time of all BLKIF_OP_WRITE, in us.
+         */
+        long long st_wr_sum_usecs;
+
+        /**
+         * Absolute maximum BLKIF_OP_WRITE response time, in us.
+         */
+	    long long st_wr_max_usecs;
+
     } xenvbd;
 };
 
