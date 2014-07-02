@@ -434,8 +434,8 @@ tapdisk_xenblkif_stats_update(struct td_xenblkif *blkif)
     err = snprintf(blkif->xenvbd_stats.stats.mem,
             blkif->xenvbd_stats.stats.size,
             "%llu %llu %llu %llu %llu %llu %llu\n"
-            "read requests %lld, avg usecs: %llu, max usecs: %llu\n"
-            "write requests %lld, avg usecs: %llu, max usecs: %llu\n",
+            "read requests: %lld, avg usecs: %llu, max usecs: %llu\n"
+            "write requests: %lld, avg usecs: %llu, max usecs: %llu\n",
             blkif->stats.xenvbd.st_ds_req,
             blkif->stats.xenvbd.st_f_req,
             blkif->stats.xenvbd.st_oo_req,
